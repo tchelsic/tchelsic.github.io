@@ -39,6 +39,15 @@ jobs:
         with:
           path: build/
           include-hidden-files: true
+
+      - name: Build static site
+        run: npm run build
+
+      # Add this step:
+      - name: Include Admin Dashboard
+        run: |
+          mkdir -p build/admin
+          cp admin.html build/admin/index.html
   deploy:
     if: github.event_name != 'pull_request'
     needs: build
