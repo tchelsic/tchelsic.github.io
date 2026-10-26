@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suri Links Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased flex flex-col selection:bg-brand-600 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">
+          S
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Suri Manager
+            <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 font-medium">GitHub Pages</span>
+          </h1>
+          <p id="repoLabel" class="text-xs text-slate-400 font-mono">Not connected</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Deployment Status Badge -->
+        <div id="deployStatusContainer" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-xs">
+          <span id="deployStatusDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="deployStatusText" class="text-slate-400">Idle</span>
+          <a id="deployStatusLink" href="#" target="_blank" class="hidden text-brand-400 hover:underline">View</a>
+        </div>
+
+        <!-- Settings Button -->
+        <button id="openSettingsBtn" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition-all flex items-center gap-1.5 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Settings
+        </button>
+
+        <!-- Commit & Deploy Button -->
+        <button id="commitBtn" disabled class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:hover:bg-brand-600 text-white transition-all flex items-center gap-1.5 shadow-sm shadow-brand-500/25">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <span id="commitBtnText">Commit & Deploy</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Not Configured Notice -->
+    <div id="setupNotice" class="p-6 rounded-2xl border border-brand-500/30 bg-gradient-to-b from-brand-950/40 to-slate-900 text-center space-y-3">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-500/20 text-brand-400 mb-1">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <h2 class="text-xl font-bold text-white">Connect your Suri GitHub Repository</h2>
+      <p class="text-sm text-slate-300 max-w-lg mx-auto">
+        Configure your GitHub Personal Access Token and repository name to fetch, edit, and push changes directly to your <code class="bg-slate-800 px-1.5 py-0.5 rounded text-brand-300">src/links.json</code> file.
+      </p>
+      <div>
+        <button id="configureNowBtn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm rounded-lg shadow-lg shadow-brand-500/25 transition-all">
+          Open Settings & Connect
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Management Section (hidden until configured) -->
+    <div id="appBody" class="hidden space-y-6">
+
+      <!-- Unsaved Changes Alert Banner -->
+      <div id="unsavedBanner" class="hidden p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 flex items-center justify-between text-amber-200 text-xs">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          <span>You have unsaved changes! Click <strong>"Commit & Deploy"</strong> to publish them to GitHub.</span>
+        </div>
+        <button id="discardChangesBtn" class="text-amber-400 hover:text-amber-300 underline font-medium">Discard</button>
+      </div>
+
+      <!-- Add Link & Stats Bar -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Add Link Card -->
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Add or Update Short Link
+            </h2>
+            <span class="text-xs text-slate-500">Root path: <code class="text-slate-400 bg-slate-800 px-1 py-0.5 rounded">/</code></span>
+          </div>
+
+          <form id="addLinkForm" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <!-- Short Slug -->
+            <div class="sm:col-span-4">
+              <label class="block text-xs font-medium text-slate-400 mb-1">Short Path / Slug</label>
+              <div class="relative flex items-center">
+                <span class="absolute left-3 text-slate-500 text-xs font-mono select-none">/</span>
+                <input id="inputSlug" type="text" placeholder="github" required
+                  class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg pl-7 pr-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none font-mono" />
+              </div>
+            </div>
+
+            <!-- Target URL -->
+            <div class="sm:col-span-6">
+              <label class="block text-xs font-medium text-slate-400 mb-1">Destination URL</label>
+              <input id="inputUrl" type="url" placeholder="https://github.com/your-username" required
+                class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none" />
+            </div>
+
+            <!-- Action Submit -->
+            <div class="sm:col-span-2 flex items-end">
+              <button type="submit"
+                class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition-all shadow-md shadow-brand-500/20">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Quick Info & Stats -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Repository Status</span>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span id="linkCount" class="text-3xl font-extrabold text-white">0</span>
+              <span class="text-xs text-slate-400">active short links</span>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <button id="toggleRawJsonBtn" class="hover:text-brand-300 flex items-center gap-1 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              Raw JSON
+            </button>
+            <button id="downloadBackupBtn" class="hover:text-brand-300 flex items-center gap-1 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Backup JSON
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Links Table Section -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <!-- Search & Filter Header -->
+        <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between bg-slate-900/50">
+          <div class="relative flex-1 max-w-md">
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="searchInput" type="text" placeholder="Search by slug or destination URL..."
+              class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none" />
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="refreshBtn" title="Reload from GitHub" class="p-1.5 text-slate-400 hover:text-white rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-slate-950/60 text-xs uppercase font-medium text-slate-400 border-b border-slate-800">
+              <tr>
+                <th scope="col" class="py-3 px-4">Short Path</th>
+                <th scope="col" class="py-3 px-4">Destination URL</th>
+                <th scope="col" class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="linksTableBody" class="divide-y divide-slate-800/60 font-normal">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="hidden py-12 text-center text-slate-500 text-sm">
+          No short links found matching your query.
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Settings Modal Drawer -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          GitHub Repository Configuration
+        </h3>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-medium text-slate-300 mb-1">GitHub Personal Access Token (PAT)</label>
+          <input id="cfgToken" type="password" placeholder="ghp_xxxx or github_pat_xxxx"
+            class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none font-mono" />
+          <p class="text-[11px] text-slate-500 mt-1">
+            Need a token? <a href="https://github.com/settings/tokens?type=beta" target="_blank" class="text-brand-400 hover:underline">Generate fine-grained token</a> with <strong>Contents: Read and write</strong> on this repo. Token is saved only in your browser localStorage.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Repository Owner</label>
+            <input id="cfgOwner" type="text" placeholder="e.g. your-github-username"
+              class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none font-mono" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Repository Name</label>
+            <input id="cfgRepo" type="text" placeholder="e.g. suri or my-shortlinks"
+              class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none font-mono" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Branch</label>
+            <input id="cfgBranch" type="text" value="main"
+              class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none font-mono" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">File Path</label>
+            <input id="cfgPath" type="text" value="src/links.json"
+              class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none font-mono" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-300 mb-1">Base Shortlink URL (Optional)</label>
+          <input id="cfgBaseUrl" type="url" placeholder="https://go.example.com or https://username.github.io/suri"
+            class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-600 focus:outline-none" />
+          <p class="text-[11px] text-slate-500 mt-1">Used to easily generate copyable full short links.</p>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+        <button id="clearConfigBtn" class="text-xs text-rose-400 hover:text-rose-300 hover:underline">
+          Clear Data
+        </button>
+        <button id="saveConfigBtn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs rounded-lg transition-all shadow-md shadow-brand-500/20">
+          Save & Connect
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw JSON Modal -->
+  <div id="rawJsonModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-semibold text-white">Raw links.json Editor</h3>
+        <button id="closeRawJsonBtn" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <textarea id="rawJsonTextarea" rows="14" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+      <div class="flex items-center justify-between">
+        <span id="rawJsonError" class="text-xs text-rose-400"></span>
+        <button id="applyRawJsonBtn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs rounded-lg transition-all">
+          Apply to Table
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium border flex items-center gap-2">
+  </div>
+
+  <script>
+    // --- State Management ---
+    let config = {
+      token: '',
+      owner: '',
+      repo: '',
+      branch: 'main',
+      path: 'src/links.json',
+      baseUrl: ''
+    };
+
+    let originalLinks = {};
+    let currentLinks = {};
+    let currentFileSha = null;
+    let isDirty = false;
+    let pollInterval = null;
+
+    // --- DOM Elements ---
+    const setupNotice = document.getElementById('setupNotice');
+    const appBody = document.getElementById('appBody');
+    const repoLabel = document.getElementById('repoLabel');
+    const linksTableBody = document.getElementById('linksTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const linkCount = document.getElementById('linkCount');
+    const commitBtn = document.getElementById('commitBtn');
+    const commitBtnText = document.getElementById('commitBtnText');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const discardChangesBtn = document.getElementById('discardChangesBtn');
+    const searchInput = document.getElementById('searchInput');
+
+    // Modals
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const configureNowBtn = document.getElementById('configureNowBtn');
+    const saveConfigBtn = document.getElementById('saveConfigBtn');
+    const clearConfigBtn = document.getElementById('clearConfigBtn');
+
+    const rawJsonModal = document.getElementById('rawJsonModal');
+    const toggleRawJsonBtn = document.getElementById('toggleRawJsonBtn');
+    const closeRawJsonBtn = document.getElementById('closeRawJsonBtn');
+    const rawJsonTextarea = document.getElementById('rawJsonTextarea');
+    const applyRawJsonBtn = document.getElementById('applyRawJsonBtn');
+    const rawJsonError = document.getElementById('rawJsonError');
+    const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+
+    // Inputs
+    const inputSlug = document.getElementById('inputSlug');
+    const inputUrl = document.getElementById('inputUrl');
+    const addLinkForm = document.getElementById('addLinkForm');
+
+    // Status
+    const deployStatusContainer = document.getElementById('deployStatusContainer');
+    const deployStatusDot = document.getElementById('deployStatusDot');
+    const deployStatusText = document.getElementById('deployStatusText');
+    const deployStatusLink = document.getElementById('deployStatusLink');
+
+    // --- Helpers ---
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.className = `fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 pointer-events-auto px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium border flex items-center gap-2 ${
+        type === 'error'
+          ? 'bg-rose-950 text-rose-200 border-rose-800'
+          : type === 'success'
+          ? 'bg-emerald-950 text-emerald-200 border-emerald-800'
+          : 'bg-slate-900 text-slate-100 border-slate-700'
+      }`;
+      setTimeout(() => {
+        toast.classList.replace('translate-y-0', 'translate-y-16');
+        toast.classList.replace('opacity-100', 'opacity-0');
+      }, 3500);
+    }
+
+    function utf8ToBase64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    function base64ToUtf8(str) {
+      const binary = atob(str.replace(/\s/g, ''));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return new TextDecoder().decode(bytes);
+    }
+
+    function cleanSlug(slug) {
+      let s = slug.trim();
+      if (s === '/' || s === '') return '/';
+      // Strip leading/trailing slashes for custom slugs unless it's just '/'
+      s = s.replace(/^\/+/, '').replace(/\/+$/, '');
+      return s;
+    }
+
+    // --- LocalStorage ---
+    function loadStoredConfig() {
+      const stored = localStorage.getItem('suri_admin_config');
+      if (stored) {
+        try {
+          config = { ...config, ...JSON.parse(stored) };
+          document.getElementById('cfgToken').value = config.token || '';
+          document.getElementById('cfgOwner').value = config.owner || '';
+          document.getElementById('cfgRepo').value = config.repo || '';
+          document.getElementById('cfgBranch').value = config.branch || 'main';
+          document.getElementById('cfgPath').value = config.path || 'src/links.json';
+          document.getElementById('cfgBaseUrl').value = config.baseUrl || '';
+          return true;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      return false;
+    }
+
+    function saveStoredConfig() {
+      config.token = document.getElementById('cfgToken').value.trim();
+      config.owner = document.getElementById('cfgOwner').value.trim();
+      config.repo = document.getElementById('cfgRepo').value.trim();
+      config.branch = document.getElementById('cfgBranch').value.trim() || 'main';
+      config.path = document.getElementById('cfgPath').value.trim() || 'src/links.json';
+      config.baseUrl = document.getElementById('cfgBaseUrl').value.trim();
+
+      localStorage.setItem('suri_admin_config', JSON.stringify(config));
+    }
+
+    // --- GitHub API Calls ---
+    async function fetchLinksFromGithub() {
+      if (!config.token || !config.owner || !config.repo) {
+        setupNotice.classList.remove('hidden');
+        appBody.classList.add('hidden');
+        return;
+      }
+
+      showToast('Fetching links from GitHub...', 'info');
+
+      try {
+        const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}?ref=${config.branch}`;
+        const res = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${config.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error(`File "${config.path}" not found in branch "${config.branch}".`);
+          } else if (res.status === 401) {
+            throw new Error('Unauthorized. Please check your GitHub Personal Access Token.');
+          } else {
+            const err = await res.json();
+            throw new Error(err.message || 'Failed to fetch repository contents.');
+          }
+        }
+
+        const data = await res.json();
+        currentFileSha = data.sha;
+        const decodedContent = base64ToUtf8(data.content);
+        const parsed = JSON.parse(decodedContent);
+
+        originalLinks = JSON.parse(JSON.stringify(parsed));
+        currentLinks = JSON.parse(JSON.stringify(parsed));
+        setDirty(false);
+
+        setupNotice.classList.add('hidden');
+        appBody.classList.remove('hidden');
+        repoLabel.innerText = `${config.owner}/${config.repo} (${config.branch})`;
+
+        renderLinks();
+        checkDeploymentStatus();
+        showToast('Links loaded successfully!', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+      }
+    }
+
+    async function commitLinksToGithub() {
+      if (!isDirty) return;
+
+      commitBtn.disabled = true;
+      commitBtnText.innerText = 'Committing...';
+
+      try {
+        const formattedJson = JSON.stringify(currentLinks, null, 2) + '\n';
+        const contentBase64 = utf8ToBase64(formattedJson);
+        const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`;
+
+        const payload = {
+          message: `chore: update short links via Suri Manager [skip ci]`,
+          content: contentBase64,
+          sha: currentFileSha,
+          branch: config.branch
+        };
+
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${config.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Failed to commit changes.');
+        }
+
+        const data = await res.json();
+        currentFileSha = data.content.sha;
+        originalLinks = JSON.parse(JSON.stringify(currentLinks));
+        setDirty(false);
+
+        showToast('Committed to GitHub! Deploying...', 'success');
+
+        // Start checking deployment workflow
+        startDeploymentPolling();
+      } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+      } finally {
+        commitBtn.disabled = !isDirty;
+        commitBtnText.innerText = 'Commit & Deploy';
+      }
+    }
+
+    async function checkDeploymentStatus() {
+      if (!config.token || !config.owner || !config.repo) return;
+      try {
+        const url = `https://api.github.com/repos/${config.owner}/${config.repo}/actions/runs?per_page=1`;
+        const res = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${config.token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.workflow_runs && data.workflow_runs.length > 0) {
+          const run = data.workflow_runs[0];
+          deployStatusContainer.classList.remove('hidden');
+          deployStatusLink.classList.remove('hidden');
+          deployStatusLink.href = run.html_url;
+
+          if (run.status === 'in_progress' || run.status === 'queued') {
+            deployStatusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+            deployStatusText.innerText = 'Building & Deploying...';
+            return 'running';
+          } else if (run.status === 'completed') {
+            if (run.conclusion === 'success') {
+              deployStatusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+              deployStatusText.innerText = 'Live';
+            } else {
+              deployStatusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
+              deployStatusText.innerText = 'Failed';
+            }
+            return 'finished';
+          }
+        }
+      } catch (e) {
+        console.error('Failed to poll status', e);
+      }
+      return 'unknown';
+    }
+
+    function startDeploymentPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      let count = 0;
+      pollInterval = setInterval(async () => {
+        count++;
+        const state = await checkDeploymentStatus();
+        if (state === 'finished' || count > 30) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+          if (state === 'finished') {
+            showToast('GitHub Pages deployment completed!', 'success');
+          }
+        }
+      }, 5000);
+    }
+
+    // --- UI State & Rendering ---
+    function setDirty(dirty) {
+      isDirty = dirty;
+      commitBtn.disabled = !isDirty;
+      if (isDirty) {
+        unsavedBanner.classList.remove('hidden');
+      } else {
+        unsavedBanner.classList.add('hidden');
+      }
+    }
+
+    function renderLinks(filter = '') {
+      linksTableBody.innerHTML = '';
+      const keys = Object.keys(currentLinks).sort();
+      const query = filter.toLowerCase().trim();
+
+      let visibleCount = 0;
+      linkCount.innerText = keys.length;
+
+      keys.forEach((slug) => {
+        const dest = currentLinks[slug];
+        if (query && !slug.toLowerCase().includes(query) && !dest.toLowerCase().includes(query)) {
+          return;
+        }
+        visibleCount++;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition-colors group';
+
+        // Full short link calculation
+        let fullShortUrl = '';
+        if (config.baseUrl) {
+          const base = config.baseUrl.replace(/\/+$/, '');
+          fullShortUrl = slug === '/' ? base : `${base}/${slug}`;
+        }
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-medium text-slate-100 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-800 text-brand-300 border border-slate-700/60 text-xs">
+              /${slug === '/' ? '' : slug}
+            </span>
+          </td>
+          <td class="py-3 px-4 max-w-md">
+            <div class="flex items-center gap-2">
+              <a href="${dest}" target="_blank" rel="noopener noreferrer" class="truncate text-slate-300 hover:text-brand-400 hover:underline transition-colors block text-xs" title="${dest}">
+                ${dest}
+              </a>
+              <a href="${dest}" target="_blank" class="text-slate-500 hover:text-slate-300 shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              </a>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right whitespace-nowrap">
+            <div class="flex items-center justify-end gap-1.5">
+              ${fullShortUrl ? `
+                <button onclick="copyToClipboard('${fullShortUrl}')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1" title="Copy Shortlink: ${fullShortUrl}">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  Copy
+                </button>
+              ` : ''}
+              <button onclick="editLink('${slug}')" class="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors" title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </button>
+              <button onclick="deleteLink('${slug}')" class="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors" title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </td>
+        `;
+        linksTableBody.appendChild(tr);
+      });
+
+      if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    // --- Action Handlers ---
+    window.copyToClipboard = function(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Shortlink copied to clipboard!', 'success');
+      });
+    };
+
+    window.editLink = function(slug) {
+      inputSlug.value = slug === '/' ? '/' : slug;
+      inputUrl.value = currentLinks[slug] || '';
+      inputUrl.focus();
+      showToast(`Editing link: /${slug}`, 'info');
+    };
+
+    window.deleteLink = function(slug) {
+      if (confirm(`Are you sure you want to delete shortlink "/${slug}"?`)) {
+        delete currentLinks[slug];
+        setDirty(true);
+        renderLinks(searchInput.value);
+        showToast(`Deleted /${slug}. Click Commit to apply.`, 'info');
+      }
+    };
+
+    addLinkForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const rawSlug = inputSlug.value;
+      const targetUrl = inputUrl.value.trim();
+
+      if (!rawSlug || !targetUrl) return;
+
+      const slug = cleanSlug(rawSlug);
+      currentLinks[slug] = targetUrl;
+      setDirty(true);
+
+      inputSlug.value = '';
+      inputUrl.value = '';
+      renderLinks(searchInput.value);
+      showToast(`Saved "/${slug}". Click Commit to publish!`, 'success');
+    });
+
+    discardChangesBtn.addEventListener('click', () => {
+      if (confirm('Discard all unsaved edits and reset to GitHub version?')) {
+        currentLinks = JSON.parse(JSON.stringify(originalLinks));
+        setDirty(false);
+        renderLinks(searchInput.value);
+        showToast('Changes discarded.', 'info');
+      }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      renderLinks(e.target.value);
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchLinksFromGithub);
+    commitBtn.addEventListener('click', commitLinksToGithub);
+
+    // --- Raw JSON Modal Handlers ---
+    toggleRawJsonBtn.addEventListener('click', () => {
+      rawJsonTextarea.value = JSON.stringify(currentLinks, null, 2);
+      rawJsonError.innerText = '';
+      rawJsonModal.classList.remove('hidden');
+    });
+
+    closeRawJsonBtn.addEventListener('click', () => {
+      rawJsonModal.classList.add('hidden');
+    });
+
+    applyRawJsonBtn.addEventListener('click', () => {
+      try {
+        const parsed = JSON.parse(rawJsonTextarea.value);
+        if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+          throw new Error('JSON root must be an object with "slug": "url" pairs.');
+        }
+        currentLinks = parsed;
+        setDirty(true);
+        renderLinks(searchInput.value);
+        rawJsonModal.classList.add('hidden');
+        showToast('JSON applied! Remember to commit changes.', 'success');
+      } catch (err) {
+        rawJsonError.innerText = `Invalid JSON: ${err.message}`;
+      }
+    });
+
+    downloadBackupBtn.addEventListener('click', () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentLinks, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `links-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+
+    // --- Settings Modal Handlers ---
+    openSettingsBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('hidden');
+    });
+
+    configureNowBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('hidden');
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+
+    saveConfigBtn.addEventListener('click', () => {
+      saveStoredConfig();
+      settingsModal.classList.add('hidden');
+      fetchLinksFromGithub();
+    });
+
+    clearConfigBtn.addEventListener('click', () => {
+      if (confirm('Clear saved GitHub token and configuration from this browser?')) {
+        localStorage.removeItem('suri_admin_config');
+        location.reload();
+      }
+    });
+
+    // --- Init ---
+    if (loadStoredConfig() && config.token && config.owner && config.repo) {
+      fetchLinksFromGithub();
+    } else {
+      setupNotice.classList.remove('hidden');
+      appBody.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
